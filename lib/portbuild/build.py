@@ -1,12 +1,32 @@
+import os
+
 import portbuild.config as config
 import portbuild.util as util
+
+
+pbd = "/var/portbuild"
 
 class Build:
   def __init__(self, arch, branch, buildid, config):
     self.arch = arch
     self.branch = branch
     self.buildid = buildid
-    self.builddir = "/var/portbuild/%s/%s/builds/%s" % (arch, branch, buildid)
+    self.builddir = os.path.join(pbd, arch, branch, "builds", buildid)
+
+    if not os.path.exists(os.path.join(pbd, arch)):
+      error = "arch '%s' doesn't exist." % arch
+      util.error(error)
+      raise Exception(error)
+
+    if not os.path.exists(os.path.join(pbd, arch, branch)):
+      error = "branch '%s' doesn't exist." % branch
+      util.error(error)
+      raise Exception(error)
+
+    if not os.path.exists(os.path.join(pbd, arch, branch, "builds", buildid)):
+      error = "buildid '%s' doesn't exist." % buildid
+      util.error(error)
+      raise Exception(error)
 
   def setup(self):
     # Safe defaults for return values.

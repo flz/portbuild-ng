@@ -48,7 +48,10 @@ arch = args.arch
 branch = args.branch
 buildid = args.buildid
 
-build = build.Build(arch, branch, buildid, args)
+try:
+  build = build.Build(arch, branch, buildid, args)
+except:
+  sys.exit(1)
 
 (success, changed) = build.setup()
 

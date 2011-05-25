@@ -6,6 +6,8 @@ import ConfigParser
 import portbuild.util as util
 
 
+pbd = "/var/portbuild"
+
 check_variables = [
   "pkg_sufx",
   "mailto",
@@ -14,8 +16,8 @@ check_variables = [
 class Config:
   def __init__(self, arch, branch):
     self._config = ConfigParser.SafeConfigParser()
-    archpath = "/var/portbuild/%s/portbuild.conf" % (arch)
-    branchpath = "/var/portbuild/%s/%s/portbuild.conf" % (arch, branch)
+    archpath = os.path.join(pbd, arch, "portbuild.conf")
+    branchpath = os.path.join(pbd, arch, branch, "portbuild.conf")
 
     # This is a bit hackish as the current configuration files don't use
     # sections and ConfigParser needs at least one...
