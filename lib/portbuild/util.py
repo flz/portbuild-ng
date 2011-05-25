@@ -18,3 +18,7 @@ def warn(msg):
 def error(msg):
   """Simple error routine."""
   print("E: %s" % (msg))
+
+def log(msg):
+  """This isn't really useful."""
+  print(msg)

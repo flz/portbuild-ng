@@ -62,3 +62,7 @@ if not success:
 # Only rebuild metadata files if either of bindist, src or ports have changed.
 if changed:
   build.makestuff(args)
+else:
+  util.log("Tarballs didn't change. Skipping metadata generation.")
+
+build.finish()
