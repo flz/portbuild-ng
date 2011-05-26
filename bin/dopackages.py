@@ -37,6 +37,9 @@ parser = argparse.ArgumentParser(description='Build some packages.')
 for name, descr in options.iteritems():
   parser.add_argument("-%s" % (name), action="store_true", help=descr)
 
+# Other options
+parser.add_argument("-target", metavar="file", help="Subset of the ports tree to build")
+
 # Mandatory arguments
 parser.add_argument("arch")
 parser.add_argument("branch")
@@ -49,9 +52,13 @@ branch = args.branch
 buildid = args.buildid
 
 try:
-  build = build.Build(arch, branch, buildid, args)
-except:
+  build = build.Build(arch, branch, buildid)
+except Exception, e:
+  print e
   sys.exit(1)
+
+if args.target:
+  build.set_subset(args.target)
 
 (success, changed) = build.setup()
 
@@ -59,10 +66,6 @@ if not success:
   util.error("Failed to setup build. Exiting.")
   sys.exit(1)
 
-# Only rebuild metadata files if either of bindist, src or ports have changed.
-if changed:
-  build.makestuff(args)
-else:
-  util.log("Tarballs didn't change. Skipping metadata generation.")
+build.metagen(changed, args)
 
 build.finish()

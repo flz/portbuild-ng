@@ -38,7 +38,7 @@ class Tarball:
       self.realpath = os.path.join(cachedir, "%s-%s.tbz" % (self.component, self.checksum[0:16]))
       os.rename(self.path, self.realpath)
       self.path = dest
-      if os.path.exists(self.path):
+      if os.path.lexists(self.path):
         os.unlink(self.path)
       os.symlink(self.realpath, self.path)
       util.log("Tarball cached as %s" % (self.realpath))
