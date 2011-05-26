@@ -121,18 +121,17 @@ class Build:
       pt_orig = tarball.PortsTarball(self.builddir)
     except:
       pass
-    finally:
-      path = tarball.PortsTarball.create(self.builddir)
-      if not path:
-        return (False, changed)
-      pt = tarball.PortsTarball(self.builddir, path)
-      if not pt == pt_orig:
-        changed = True
-        pt.promote()
-        self.pt = pt
-      else:
-        util.log("Ports tarball unchanged.")
-        pt.delete()
+    try:
+      pt = tarball.PortsTarball.create(self.builddir)
+    except KeyboardInterrupt:
+      return (False, changed)
+    if not pt == pt_orig:
+      changed = True
+      pt.promote()
+      self.pt = pt
+    else:
+      util.log("Ports tarball unchanged.")
+      pt.delete()
     return (True, changed)
 
   def setup_src(self):
@@ -143,18 +142,17 @@ class Build:
       st_orig = tarball.SrcTarball(self.builddir)
     except:
       pass
-    finally:
-      path = tarball.SrcTarball.create(self.builddir)
-      if not path:
-        return (False, changed)
-      st = tarball.SrcTarball(self.builddir, path)
-      if not st == st_orig:
-        changed = True
-        st.promote()
-        self.st = st
-      else:
-        util.log("Src tarball unchanged.")
-        st.delete()
+    try:
+      st = tarball.SrcTarball.create(self.builddir)
+    except KeyboardInterrupt:
+      return (False, changed)
+    if not st == st_orig:
+      changed = True
+      st.promote()
+      self.st = st
+    else:
+      util.log("Src tarball unchanged.")
+      st.delete()
     return (True, changed)
 
   def metagen(self, changed, args):

@@ -6,6 +6,7 @@ import portbuild.util as util
 
 pbd = "/var/portbuild"
 
+
 class Tarball:
   def __init__(self, builddir, component, path):
     """Create a tarball object."""
@@ -15,7 +16,7 @@ class Tarball:
     self.builddir = builddir
 
     if not os.path.exists(path):
-      raise Exception("%s doesn't exist" % (path))
+      raise IOError("%s doesn't exist" % (path))
 
     cmd = util.pipe_cmd("/sbin/sha256 -q %s" % (path))
     self.checksum = cmd.stdout.readline().strip()
@@ -53,25 +54,25 @@ class Tarball:
     os.unlink(self.path)
 
   @staticmethod
-  def create(base, component):
+  def create(builddir, component):
     """Create a new tarball."""
     cachedir = os.path.join(pbd, "tarballs")
     if os.path.isdir(cachedir):
       destdir = cachedir
     else:
-      destdir = base
+      destdir = builddir
     prefix = "%s-" % (component)
     (f, tmp) = tempfile.mkstemp(dir=destdir, prefix=prefix, suffix=".tbz")
     util.log("Creating %s tarball..." % (component))
-    cmd = "/usr/bin/tar -C %s -cjf %s %s" % (base, tmp, component)
+    cmd = "/usr/bin/tar -C %s -cjf %s %s" % (builddir, tmp, component)
     try:
       util.shell_cmd(cmd)
     except KeyboardInterrupt:
       print "Cleaning up temporary tarball..."
       os.unlink(tmp)
-      return None
+      raise
     else:
-      return tmp
+      return Tarball(builddir, component, tmp)
 
 class PortsTarball(Tarball):
   def __init__(self, builddir, path=None):
