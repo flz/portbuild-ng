@@ -1,5 +1,6 @@
 import errno
 import os
+import subprocess
 
 def mkdir_p(path):
   """Convenience routine to recursive create a hierarchy of directories."""
@@ -22,3 +23,15 @@ def error(msg):
 def log(msg):
   """This isn't really useful."""
   print(msg)
+
+def pipe_cmd(cmd, env=None, cwd=None):
+  return subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, env=env)
+
+def shell_cmd(cmd, env=None, cwd=None, quiet=False):
+  cmd = pipe_cmd(cmd, env, cwd)
+  if quiet:
+    cmd.wait()
+    return cmd
+  else:
+    for line in cmd.stdout.readlines():
+      print line.rstrip()

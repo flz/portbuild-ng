@@ -17,7 +17,7 @@ class Tarball:
     if not os.path.exists(path):
       raise Exception("%s doesn't exist" % (path))
 
-    cmd = subprocess.Popen(["/sbin/sha256", "-q", path], stdout=subprocess.PIPE)
+    cmd = util.pipe_cmd("/sbin/sha256 -q %s" % (path))
     self.checksum = cmd.stdout.readline().strip()
 
   def __eq__(self, other):
@@ -27,7 +27,7 @@ class Tarball:
     else:
       return self.checksum == other.checksum
 
-  def install(self, dest=None):
+  def promote(self, dest=None):
     """Put the tarball where it should be."""
     # dest might be used as a compatibility shim.
     if dest == None:
@@ -49,7 +49,7 @@ class Tarball:
 
   def delete(self):
     """Delete underlying tarball file."""
-    # This is meant to be called instead of install().
+    # This is meant to be called instead of promote().
     os.unlink(self.path)
 
   @staticmethod
@@ -63,8 +63,15 @@ class Tarball:
     prefix = "%s-" % (component)
     (f, tmp) = tempfile.mkstemp(dir=destdir, prefix=prefix, suffix=".tbz")
     util.log("Creating %s tarball..." % (component))
-    os.system("tar -C %s -cjf %s %s 2>/dev/null" % (base, tmp, component))
-    return tmp
+    cmd = "/usr/bin/tar -C %s -cjf %s %s" % (base, tmp, component)
+    try:
+      util.shell_cmd(cmd)
+    except KeyboardInterrupt:
+      print "Cleaning up temporary tarball..."
+      os.unlink(tmp)
+      return None
+    else:
+      return tmp
 
 class PortsTarball(Tarball):
   def __init__(self, builddir, path=None):

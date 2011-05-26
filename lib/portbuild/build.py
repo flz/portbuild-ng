@@ -99,8 +99,17 @@ class Build:
       util.error("Couldn't find bindist.tbz.")
       return (False, changed)
 
-    changed |= self.setup_ports()
-    changed |= self.setup_src()
+    (ps, pc) = self.setup_ports()
+    if not ps:
+      return (False, changed)
+    else:
+      changed |= pc
+
+    (ss, sc) = self.setup_src()
+    if not ss:
+      return (False, changed)
+    else:
+      changed |= sc
 
     return (True, changed)
 
@@ -114,15 +123,17 @@ class Build:
       pass
     finally:
       path = tarball.PortsTarball.create(self.builddir)
+      if not path:
+        return (False, changed)
       pt = tarball.PortsTarball(self.builddir, path)
       if not pt == pt_orig:
         changed = True
-        pt.install()
+        pt.promote()
         self.pt = pt
       else:
         util.log("Ports tarball unchanged.")
         pt.delete()
-    return changed
+    return (True, changed)
 
   def setup_src(self):
     # Deal with src.
@@ -134,15 +145,17 @@ class Build:
       pass
     finally:
       path = tarball.SrcTarball.create(self.builddir)
+      if not path:
+        return (False, changed)
       st = tarball.SrcTarball(self.builddir, path)
       if not st == st_orig:
         changed = True
-        st.install()
+        st.promote()
         self.st = st
       else:
         util.log("Src tarball unchanged.")
         st.delete()
-    return changed
+    return (True, changed)
 
   def metagen(self, changed, args):
     """Create metadata files"""
@@ -212,9 +225,9 @@ class Build:
 
     util.log("Creating INDEX file...")
     cmd = "%s/scripts/makeindex %s %s %s %s" % (pbc, self.arch, self.branch, self.buildid, self.subsetfile)
-    f = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, cwd=self.portsdir, env=environ)
+    f = util.pipe_cmd(cmd, env=environ, cwd=self.portsdir)
+    success = "^Generating %s - please wait.. Done.$" % (os.path.basename(self.indexfile))
     for i in f.stdout.readlines():
-      success = "^Generating %s - please wait.. Done.$" % (os.path.basename(self.indexfile))
       if re.match(success, i.rstrip()):
         break
       else:
@@ -236,9 +249,7 @@ class Build:
 
     util.log("Creating duds file...")
     cmd = "%s/scripts/makeduds %s %s %s %s" % (pbc, self.arch, self.branch, self.buildid, self.subsetfile)
-    f = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, cwd=self.portsdir, env=environ)
-    for i in f.stdout.readlines():
-      print i.rstrip()
+    f = util.shell_cmd(cmd, env=environ, cwd=self.portsdir)
 
   def makerestr(self):
     """Create restricted.sh file."""
@@ -254,9 +265,7 @@ class Build:
 
     util.log("Creating restricted.sh file...")
     cmd = "%s/scripts/makerestr %s %s %s %s" % (pbc, self.arch, self.branch, self.buildid, self.subsetfile)
-    f = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, cwd=self.portsdir, env=environ)
-    for i in f.stdout.readlines():
-      print i.rstrip()
+    f = util.shell_cmd(cmd, cwd=self.portsdir)
 
   def makecdrom(self):
     """Create cdrom.sh file."""
