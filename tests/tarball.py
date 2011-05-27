@@ -7,8 +7,8 @@ class TestTarball(unittest.TestCase):
   def setUp(self):
     """Creates a tarball object."""
     # This doesn't actually check that the argument is an archive, just that the file exists.
-    self.ball = tarball.Tarball("/nonexistent", "meh", "/etc/passwd")
-    self.ball2 = tarball.Tarball("/nonexistent", "meh", "/etc/passwd")
+    self.ball = tarball.Tarball("/nonexistent", "meh", "/etc/rc")
+    self.ball2 = tarball.Tarball("/nonexistent", "meh", "/etc/rc")
 
   def tearDown(self):
     pass
