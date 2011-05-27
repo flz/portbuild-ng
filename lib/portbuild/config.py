@@ -50,3 +50,5 @@ class Config:
         return self._config.get("portbuild", attr)
       except ConfigParser.NoOptionError:
         return None
+
+# vim: tabstop=2 shiftwidth=2 expandtab

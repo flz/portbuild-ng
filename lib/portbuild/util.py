@@ -35,3 +35,5 @@ def shell_cmd(cmd, env=None, cwd=None, quiet=False):
   else:
     for line in cmd.stdout.readlines():
       print line.rstrip()
+
+# vim: tabstop=2 shiftwidth=2 expandtab

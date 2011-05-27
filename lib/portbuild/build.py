@@ -266,3 +266,5 @@ class Build:
   def makecdrom(self):
     """Create cdrom.sh file."""
     pass
+
+# vim: tabstop=2 shiftwidth=2 expandtab
