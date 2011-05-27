@@ -1,6 +1,5 @@
 import os
 import re
-import subprocess
 import time
 
 import portbuild.config as config
@@ -80,7 +79,6 @@ class Build:
       self.subset = [line.rstrip() for line in f.readlines()]
 
   def setup(self):
-    success = False
     changed = False
 
     util.log("Setting up build...")
@@ -94,7 +92,7 @@ class Build:
 
     # Deal with bindist.
     try:
-      bt = tarball.BindistTarball(self.builddir)
+      self.bt = tarball.BindistTarball(self.builddir)
     except:
       util.error("Couldn't find bindist.tbz.")
       return (False, changed)
@@ -247,7 +245,7 @@ class Build:
 
     util.log("Creating duds file...")
     cmd = "%s/scripts/makeduds %s %s %s %s" % (pbc, self.arch, self.branch, self.buildid, self.subsetfile)
-    f = util.shell_cmd(cmd, env=environ, cwd=self.portsdir)
+    util.shell_cmd(cmd, env=environ, cwd=self.portsdir)
 
   def makerestr(self):
     """Create restricted.sh file."""
@@ -263,7 +261,7 @@ class Build:
 
     util.log("Creating restricted.sh file...")
     cmd = "%s/scripts/makerestr %s %s %s %s" % (pbc, self.arch, self.branch, self.buildid, self.subsetfile)
-    f = util.shell_cmd(cmd, cwd=self.portsdir)
+    util.shell_cmd(cmd, cwd=self.portsdir)
 
   def makecdrom(self):
     """Create cdrom.sh file."""
