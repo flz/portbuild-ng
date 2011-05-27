@@ -82,4 +82,4 @@ class Torrent:
     data = libtorrent.bencode(torrent.generate())
     return Torrent(target, data=data)
 
-# vim: tabstop=2 shiftwidth=2 expandtab
+# vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab

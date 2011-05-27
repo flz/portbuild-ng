@@ -69,4 +69,4 @@ build.metagen(changed, args)
 
 build.finish()
 
-# vim: tabstop=2 shiftwidth=2 expandtab
+# vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab

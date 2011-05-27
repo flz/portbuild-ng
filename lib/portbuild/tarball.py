@@ -98,4 +98,4 @@ class BindistTarball(Tarball):
     path = os.path.join(builddir, "bindist.tbz")
     Tarball.__init__(self, builddir, "bindist", path)
 
-# vim: tabstop=2 shiftwidth=2 expandtab
+# vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab
