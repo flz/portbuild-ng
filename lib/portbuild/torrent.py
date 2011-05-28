@@ -53,11 +53,11 @@ class TorrentSession:
       self.session.remove_torrent(torrent.handle)
 
 class Torrent:
-  def __init__(self, name, data, dest="/var/portbuild/tarballs"):
+  def __init__(self, name, data):
     """Create a Torrent object."""
-    self.name = name
+    self.name = os.path.basename(name)
+    self.dest = os.path.dirname(name)
     self.data = data
-    self.dest = dest
     self.handle = None
 
   def status(self):
@@ -68,6 +68,11 @@ class Torrent:
     print('%s - %.2f%% complete (down: %.1f kb/s up: %.1f kB/s peers: %d)' %
         (self.name, s.progress * 100, s.download_rate / 1000, s.upload_rate / 1000,
         s.num_peers))
+
+  def dump(self):
+    with open("/tmp/%s.torrent" % \
+              (os.path.basename(self.name)), "w") as f:
+      f.write(self.data)
 
   @staticmethod
   def create(target):

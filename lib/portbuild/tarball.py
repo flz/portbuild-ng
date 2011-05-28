@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 
 import portbuild.util as util
@@ -16,6 +17,9 @@ class Tarball:
 
     if not os.path.exists(path):
       raise IOError("%s doesn't exist" % (path))
+
+    if os.path.islink(path):
+      self.realpath = os.path.realpath(path)
 
     cmd = util.pipe_cmd("/sbin/sha256 -q %s" % (path))
     self.checksum = cmd.stdout.readline().strip()
@@ -36,16 +40,20 @@ class Tarball:
     cachedir = os.path.join(pbd, "tarballs")
     if os.path.isdir(cachedir):
       self.realpath = os.path.join(cachedir, "%s-%s.tbz" % (self.component, self.checksum[0:16]))
-      os.rename(self.path, self.realpath)
+      if not os.path.exists(self.realpath):
+        shutil.move(self.path, self.realpath)
+      else:
+        os.unlink(self.path)
       self.path = dest
       if os.path.lexists(self.path):
         os.unlink(self.path)
       os.symlink(self.realpath, self.path)
       util.log("Tarball cached as %s" % (self.realpath))
     else:
-      os.rename(self.path, dest)
-      self.path = dest
-      self.realpath = dest
+      if self.path != dest:
+        shutil.move(self.path, dest)
+        self.path = dest
+        self.realpath = dest
 
   def delete(self):
     """Delete underlying tarball file. Called instead of promote()."""

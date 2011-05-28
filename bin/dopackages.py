@@ -73,6 +73,16 @@ except build.BuildMissingMetadata as e:
   util.error("Failed to generate necessary metadata files.")
   sys.exit(1)
 
+b.seed_start()
+
+import time
+try:
+  while True:
+    b.ts.status()
+    time.sleep(2)
+except KeyboardInterrupt:
+  pass
+
 b.finish()
 
 # vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab

@@ -4,6 +4,7 @@ import time
 
 import portbuild.config as config
 import portbuild.tarball as tarball
+import portbuild.torrent as torrent
 import portbuild.util as util
 
 pbc = "/var/portbuild"
@@ -31,6 +32,7 @@ class Build:
     self.branch = branch
     self.buildid = buildid
     self.builddir = os.path.realpath(os.path.join(pbd, arch, branch, "builds", buildid))
+    self.tarballs = []
 
     # A few sanity checks.
     error = None
@@ -81,6 +83,7 @@ class Build:
       self.buildenv["BRANCH"] = branch[0]
 
   def finish(self):
+    self.seed_stop()
     self.end_time = time.time()
     util.log("Build ended after %d seconds." %
              (self.end_time - self.start_time))
@@ -116,7 +119,10 @@ class Build:
   def __setup_bindist(self):
     """Create bindist Tarball object."""
     try:
-      self.bt = tarball.BindistTarball(self.builddir)
+      bt = tarball.BindistTarball(self.builddir)
+      bt.promote()
+      self.tarballs.append(bt)
+
     except IOError as e:
       raise BuildMissingComponent(e)
 
@@ -136,9 +142,10 @@ class Build:
     if not pt == pt_orig:
       changed = True
       pt.promote()
-      self.pt = pt
+      self.tarballs.append(pt)
     else:
       util.log("Ports tarball unchanged.")
+      self.tarballs.append(pt_orig)
       pt.delete()
     return changed
 
@@ -158,9 +165,10 @@ class Build:
     if not st == st_orig:
       changed = True
       st.promote()
-      self.st = st
+      self.tarballs.append(st)
     else:
       util.log("Src tarball unchanged.")
+      self.tarballs.append(st_orig)
       st.delete()
     return changed
 
@@ -311,5 +319,19 @@ class Build:
   def makecdrom(self):
     """Create cdrom.sh file."""
     pass
+
+  def seed_start(self):
+    """Start seeding the build tarballs."""
+    self.ts = torrent.TorrentSession()
+    util.log("Start seeding...")
+    for t in self.tarballs:
+      t.torrent = torrent.Torrent.create(t.realpath)
+      t.torrent.dump()
+      self.ts.add(t.torrent)
+
+  def seed_stop(self):
+    """Stop seeding the build tarballs."""
+    util.log("Stop seeding...")
+    self.ts.terminate()
 
 # vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab
