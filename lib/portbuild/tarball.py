@@ -48,8 +48,7 @@ class Tarball:
       self.realpath = dest
 
   def delete(self):
-    """Delete underlying tarball file."""
-    # This is meant to be called instead of promote().
+    """Delete underlying tarball file. Called instead of promote()."""
     os.unlink(self.path)
 
   @staticmethod

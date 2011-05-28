@@ -5,13 +5,18 @@ import ConfigParser
 
 import portbuild.util as util
 
-
 pbd = "/var/portbuild"
 
 check_variables = [
   "pkg_sufx",
   "mailto",
 ]
+
+class ConfigException(Exception):
+  pass
+
+class InvalidConfig(ConfigException):
+  pass
 
 class Config:
   def __init__(self, arch, branch):
@@ -35,12 +40,11 @@ class Config:
           pass
         os.unlink(cfgng)
 
-  def validate(self):
     for i in check_variables:
       if not self._config.has_option("portbuild", i):
-        util.error("Variable %s isn't set in portbuild.conf." % (i))
-        return False
-    return True
+        error = "Variable %s isn't set in portbuild.conf." % (i)
+        util.error(error)
+        raise InvalidConfig(error)
 
   def __getattr__(self, attr):
     if attr == "_config":

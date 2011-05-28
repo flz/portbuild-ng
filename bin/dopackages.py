@@ -51,22 +51,28 @@ branch = args.branch
 buildid = args.buildid
 
 try:
-  build = build.Build(arch, branch, buildid)
-except Exception, e:
-  print e
+  b = build.Build(arch, branch, buildid)
+except build.BuildException as e:
+  util.error(e)
   sys.exit(1)
 
 if args.target:
-  build.set_subset(args.target)
+  b.set_subset(args.target)
 
-(success, changed) = build.setup()
-
-if not success:
+try:
+  changed = b.setup()
+except build.BuildException as e:
+  util.error(e)
   util.error("Failed to setup build. Exiting.")
   sys.exit(1)
 
-build.metagen(changed, args)
+try:
+  b.metagen(changed, args)
+except build.BuildMissingMetadata as e:
+  util.error(e)
+  util.error("Failed to generate necessary metadata files.")
+  sys.exit(1)
 
-build.finish()
+b.finish()
 
 # vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab

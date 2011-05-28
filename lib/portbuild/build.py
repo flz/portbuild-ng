@@ -9,6 +9,21 @@ import portbuild.util as util
 pbc = "/var/portbuild"
 pbd = "/var/portbuild"
 
+class BuildException(Exception):
+  pass
+
+class BuildDoesntExist(BuildException):
+  pass
+
+class BuildInvalidConfig(BuildException):
+  pass
+
+class BuildMissingComponent(BuildException):
+  pass
+
+class BuildMissingMetadata(BuildException):
+  pass
+
 class Build:
   def __init__(self, arch, branch, buildid):
     self.start_time = time.time()
@@ -18,20 +33,16 @@ class Build:
     self.builddir = os.path.realpath(os.path.join(pbd, arch, branch, "builds", buildid))
 
     # A few sanity checks.
+    error = None
     if not os.path.exists(os.path.join(pbd, arch)):
       error = "Arch '%s' doesn't exist." % (arch)
-      util.error(error)
-      raise Exception(error)
-
-    if not os.path.exists(os.path.join(pbd, arch, branch)):
+    elif not os.path.exists(os.path.join(pbd, arch, branch)):
       error = "Branch '%s' doesn't exist." % (branch)
-      util.error(error)
-      raise Exception(error)
-
-    if not os.path.exists(self.builddir):
+    elif not os.path.exists(self.builddir):
       error = "Buildid '%s' doesn't exist." % (buildid)
-      util.error(error)
-      raise Exception(error)
+
+    if error:
+      raise BuildDoesntExist(error)
 
     self.subset = None
     self.subsetfile = None
@@ -58,7 +69,8 @@ class Build:
 
     # And the tricky ones...
     with open("%s/sys/sys/param.h" % (self.srcdir)) as f:
-      ver = [i.split()[2] for i in f.readlines() if re.match("^#define __FreeBSD_version", i)]
+      ver = [i.split()[2] for i in f.readlines() \
+             if re.match("^#define __FreeBSD_version", i)]
       self.buildenv["OSVERSION"] = ver[0]
 
     with open("%s/sys/conf/newvers.sh" % (self.srcdir)) as f:
@@ -70,7 +82,8 @@ class Build:
 
   def finish(self):
     self.end_time = time.time()
-    util.log("Build ended after %d seconds." % (self.end_time - self.start_time))
+    util.log("Build ended after %d seconds." %
+             (self.end_time - self.start_time))
 
   def set_subset(self, target):
     # Not happy with that, but I need it for testing.
@@ -86,33 +99,29 @@ class Build:
     self.buildenv()
 
     # Load the configuration files.
-    self.config = config.Config(self.arch, self.branch)
-    if not self.config.validate():
-      return (False, changed)
+    try:
+      self.config = config.Config(self.arch, self.branch)
+    except config.InvalidConfig as e:
+      raise BuildInvalidConfig(e)
 
-    # Deal with bindist.
+    try:
+      self.__setup_bindist()
+      changed |= self.__setup_ports()
+      changed |= self.__setup_src()
+    except BuildMissingComponent:
+      raise
+
+    return changed
+
+  def __setup_bindist(self):
+    """Create bindist Tarball object."""
     try:
       self.bt = tarball.BindistTarball(self.builddir)
-    except:
-      util.error("Couldn't find bindist.tbz.")
-      return (False, changed)
+    except IOError as e:
+      raise BuildMissingComponent(e)
 
-    (ps, pc) = self.setup_ports()
-    if not ps:
-      return (False, changed)
-    else:
-      changed |= pc
-
-    (ss, sc) = self.setup_src()
-    if not ss:
-      return (False, changed)
-    else:
-      changed |= sc
-
-    return (True, changed)
-
-  def setup_ports(self):
-    # Deal with ports.
+  def __setup_ports(self):
+    """Create new ports tarball and Tarball object."""
     changed = False
     pt_orig = None
     try:
@@ -122,7 +131,8 @@ class Build:
     try:
       pt = tarball.PortsTarball.create(self.builddir)
     except KeyboardInterrupt:
-      return (False, changed)
+      error = "Ports tarball creation was interrupted"
+      raise BuildMissingComponent(error)
     if not pt == pt_orig:
       changed = True
       pt.promote()
@@ -130,10 +140,10 @@ class Build:
     else:
       util.log("Ports tarball unchanged.")
       pt.delete()
-    return (True, changed)
+    return changed
 
-  def setup_src(self):
-    # Deal with src.
+  def __setup_src(self):
+    """Create new src tarball and Tarball object."""
     changed = False
     st_orig = None
     try:
@@ -143,7 +153,8 @@ class Build:
     try:
       st = tarball.SrcTarball.create(self.builddir)
     except KeyboardInterrupt:
-      return (False, changed)
+      error = "Src tarball creation was interrupted"
+      raise BuildMissingComponent(error)
     if not st == st_orig:
       changed = True
       st.promote()
@@ -151,7 +162,7 @@ class Build:
     else:
       util.log("Src tarball unchanged.")
       st.delete()
-    return (True, changed)
+    return changed
 
   def metagen(self, changed, args):
     """Create metadata files"""
@@ -168,8 +179,7 @@ class Build:
         util.error("No index found but noindex option specified.")
         return False
     if buildindex:
-      if not self.makeindex():
-        return False
+      self.makeindex()
 
     buildduds = True
     if os.path.exists(self.dudsfile):
@@ -183,8 +193,7 @@ class Build:
         util.error("No duds found but noduds option specified.")
         return False
     if buildduds:
-      if not self.makeduds():
-        return False
+      self.makeduds()
 
     buildrestr = True
     if os.path.exists(self.restrfile):
@@ -198,8 +207,7 @@ class Build:
         util.error("No restr found but norestr option specified.")
         return False
     if buildrestr:
-      if not self.makerestr():
-        return False
+      self.makerestr()
 
     if args.cdrom:
       self.makecdrom()
@@ -216,18 +224,31 @@ class Build:
     environ["INDEX_QUIET"] = "1"
     environ["INDEX_JOBS"] = "6"
     environ["LOCALBASE"] = "/nonexistentlocal"
-    if self.subset:
-      environ["INDEX_PORTS"] = " ".join(self.subset)
+
+    error = None
+    cmd = "%s/scripts/makeindex %s %s %s %s" % \
+      (pbc, self.arch, self.branch, self.buildid, \
+       self.subsetfile if self.subsetfile else "")
 
     util.log("Creating INDEX file...")
-    cmd = "%s/scripts/makeindex %s %s %s %s" % (pbc, self.arch, self.branch, self.buildid, self.subsetfile)
-    f = util.pipe_cmd(cmd, env=environ, cwd=self.portsdir)
-    success = "^Generating %s - please wait.. Done.$" % (os.path.basename(self.indexfile))
-    for i in f.stdout.readlines():
-      if re.match(success, i.rstrip()):
-        break
-      else:
-        print i.rstrip()
+    try:
+      f = util.pipe_cmd(cmd, env=environ, cwd=self.portsdir)
+      success = "^Generating %s - please wait.. Done.$" % \
+        (os.path.basename(self.indexfile))
+      for i in f.stdout.readlines():
+        if re.match(success, i.rstrip()):
+          break
+        else:
+          print i.rstrip()
+      f.wait() 
+    except KeyboardInterrupt:
+      pass
+
+    if f.returncode != 0:
+      error = "Failed to build INDEX file."
+
+    if error:
+      raise BuildMissingMetadata(error)
 
   def makeduds(self):
     """Create duds file."""
@@ -243,9 +264,21 @@ class Build:
     environ["PKG_DBDIR"] = "/nonexistentpkg"
     environ["PORT_DBDIR"] = "/nonexistentport"
 
+    error = None
+    cmd = "%s/scripts/makeduds %s %s %s %s" % \
+      (pbc, self.arch, self.branch, self.buildid, \
+       self.subsetfile if self.subsetfile else "")
+
     util.log("Creating duds file...")
-    cmd = "%s/scripts/makeduds %s %s %s %s" % (pbc, self.arch, self.branch, self.buildid, self.subsetfile)
-    util.shell_cmd(cmd, env=environ, cwd=self.portsdir)
+    try:
+      f = util.shell_cmd(cmd, env=environ, cwd=self.portsdir)
+      if f.returncode != 0:
+        error = "Failed to build duds file."
+    except KeyboardInterrupt:
+      error = "Failed to build duds file."
+
+    if error:
+      raise BuildMissingMetadata(error)
 
   def makerestr(self):
     """Create restricted.sh file."""
@@ -259,9 +292,21 @@ class Build:
     environ["PKG_DBDIR"] = "/nonexistentpkg"
     environ["PORT_DBDIR"] = "/nonexistentport"
 
+    error = None
+    cmd = "%s/scripts/makerestr %s %s %s %s" % \
+      (pbc, self.arch, self.branch, self.buildid, \
+       self.subsetfile if self.subsetfile else "")
+
     util.log("Creating restricted.sh file...")
-    cmd = "%s/scripts/makerestr %s %s %s %s" % (pbc, self.arch, self.branch, self.buildid, self.subsetfile)
-    util.shell_cmd(cmd, cwd=self.portsdir)
+    try:
+      f = util.shell_cmd(cmd, cwd=self.portsdir)
+      if f.returncode != 0:
+        error = "Failed to build restricted.sh file."
+    except KeyboardInterrupt:
+      error = "Failed to build restricted.sh file."
+
+    if error:
+      raise BuildMissingMetadata(error)
 
   def makecdrom(self):
     """Create cdrom.sh file."""

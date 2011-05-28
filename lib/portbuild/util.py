@@ -25,15 +25,14 @@ def log(msg):
   print(msg)
 
 def pipe_cmd(cmd, env=None, cwd=None):
-  return subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, env=env)
+  return subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, env=env, cwd=cwd)
 
 def shell_cmd(cmd, env=None, cwd=None, quiet=False):
-  cmd = pipe_cmd(cmd, env, cwd)
-  if quiet:
-    cmd.wait()
-    return cmd
-  else:
-    for line in cmd.stdout.readlines():
+  p = pipe_cmd(cmd, env, cwd)
+  if not quiet:
+    for line in p.stdout.readlines():
       print line.rstrip()
+  p.wait()
+  return p
 
 # vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab
