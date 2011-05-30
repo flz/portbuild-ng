@@ -37,11 +37,11 @@ class Build:
     # A few sanity checks.
     error = None
     if not os.path.exists(os.path.join(pbd, arch)):
-      error = "Arch '%s' doesn't exist." % (arch)
+      error = "Arch '{0}' doesn't exist.".format(arch)
     elif not os.path.exists(os.path.join(pbd, arch, branch)):
-      error = "Branch '%s' doesn't exist." % (branch)
+      error = "Branch '{0}' doesn't exist.".format(branch)
     elif not os.path.exists(self.builddir):
-      error = "Buildid '%s' doesn't exist." % (buildid)
+      error = "Buildid '{0}' doesn't exist.".format(buildid)
 
     if error:
       raise BuildDoesntExist(error)
@@ -50,7 +50,7 @@ class Build:
     self.subsetfile = None
     self.portsdir = os.path.join(self.builddir, "ports")
     self.srcdir = os.path.join(self.builddir, "src")
-    self.indexfile = os.path.join(self.builddir, "INDEX-%s" % (self.branch[0]))
+    self.indexfile = os.path.join(self.builddir, "INDEX-{0}".format(self.branch[0]))
     self.dudsfile = os.path.join(self.builddir, "duds")
     self.restrfile = os.path.join(self.builddir, "restricted.sh")
 
@@ -70,12 +70,12 @@ class Build:
     self.buildenv["PACKAGE_BUILDING"] = "1"
 
     # And the tricky ones...
-    with open("%s/sys/sys/param.h" % (self.srcdir)) as f:
+    with open("{0}/sys/sys/param.h".format(self.srcdir)) as f:
       ver = [i.split()[2] for i in f.readlines() \
              if re.match("^#define __FreeBSD_version", i)]
       self.buildenv["OSVERSION"] = ver[0]
 
-    with open("%s/sys/conf/newvers.sh" % (self.srcdir)) as f:
+    with open("{0}/sys/conf/newvers.sh".format(self.srcdir)) as f:
       lines = f.readlines()
       rev = [i.split('"')[1] for i in lines if re.match("^REVISION", i)]
       branch = [i.split('"')[1] for i in lines if re.match("^BRANCH", i)]
@@ -234,15 +234,15 @@ class Build:
     environ["LOCALBASE"] = "/nonexistentlocal"
 
     error = None
-    cmd = "%s/scripts/makeindex %s %s %s %s" % \
-      (pbc, self.arch, self.branch, self.buildid, \
-       self.subsetfile if self.subsetfile else "")
+    cmdf = "{0}/scripts/makeindex {1} {2} {3} {4}"
+    cmd = cmdf.format(pbc, self.arch, self.branch, self.buildid, \
+                      self.subsetfile if self.subsetfile else "")
 
     util.log("Creating INDEX file...")
     try:
       f = util.pipe_cmd(cmd, env=environ, cwd=self.portsdir)
-      success = "^Generating %s - please wait.. Done.$" % \
-        (os.path.basename(self.indexfile))
+      index = os.path.basename(self.indexfile)
+      success = "^Generating %s - please wait.. Done.$".format(index)
       for i in f.stdout.readlines():
         if re.match(success, i.rstrip()):
           break
@@ -273,9 +273,9 @@ class Build:
     environ["PORT_DBDIR"] = "/nonexistentport"
 
     error = None
-    cmd = "%s/scripts/makeduds %s %s %s %s" % \
-      (pbc, self.arch, self.branch, self.buildid, \
-       self.subsetfile if self.subsetfile else "")
+    cmdf = "{0}/scripts/makeduds {1} {2} {3} {4}"
+    cmd = cmdf.format(pbc, self.arch, self.branch, self.buildid, \
+                      self.subsetfile if self.subsetfile else "")
 
     util.log("Creating duds file...")
     try:
@@ -301,9 +301,9 @@ class Build:
     environ["PORT_DBDIR"] = "/nonexistentport"
 
     error = None
-    cmd = "%s/scripts/makerestr %s %s %s %s" % \
-      (pbc, self.arch, self.branch, self.buildid, \
-       self.subsetfile if self.subsetfile else "")
+    cmdf = "{0}/scripts/makerestr {1} {2} {3} {4}"
+    cmd = cmdf.format(pbc, self.arch, self.branch, self.buildid, \
+                      self.subsetfile if self.subsetfile else "")
 
     util.log("Creating restricted.sh file...")
     try:

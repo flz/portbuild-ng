@@ -16,12 +16,12 @@ class Tarball:
     self.builddir = builddir
 
     if not os.path.exists(path):
-      raise IOError("%s doesn't exist" % (path))
+      raise IOError("File '{0}' doesn't exist".format(path))
 
     if os.path.islink(path):
       self.realpath = os.path.realpath(path)
 
-    cmd = util.pipe_cmd("/sbin/sha256 -q %s" % (path))
+    cmd = util.pipe_cmd("/sbin/sha256 -q {0}".format(path))
     self.checksum = cmd.stdout.readline().strip()
 
   def __eq__(self, other):
@@ -35,11 +35,12 @@ class Tarball:
     """Put the tarball where it should be."""
     # dest might be used as a compatibility shim.
     if dest == None:
-      dest = os.path.join(self.builddir, "%s.tbz" % (self.component))
+      dest = os.path.join(self.builddir, self.component + ".tbz")
 
     cachedir = os.path.join(pbd, "tarballs")
     if os.path.isdir(cachedir):
-      self.realpath = os.path.join(cachedir, "%s-%s.tbz" % (self.component, self.checksum[0:16]))
+      fullname = "{0}-{1}.tbz".format(self.component, self.checksum[0:16])
+      self.realpath = os.path.join(cachedir, fullname)
       if not os.path.exists(self.realpath):
         shutil.move(self.path, self.realpath)
       else:
@@ -48,7 +49,7 @@ class Tarball:
       if os.path.lexists(self.path):
         os.unlink(self.path)
       os.symlink(self.realpath, self.path)
-      util.log("Tarball cached as %s" % (self.realpath))
+      util.log("Tarball cached as {0}".format(self.realpath))
     else:
       if self.path != dest:
         shutil.move(self.path, dest)
@@ -67,10 +68,10 @@ class Tarball:
       destdir = cachedir
     else:
       destdir = builddir
-    prefix = "%s-" % (component)
+    prefix = component + "-"
     (f, tmp) = tempfile.mkstemp(dir=destdir, prefix=prefix, suffix=".tbz")
-    util.log("Creating %s tarball..." % (component))
-    cmd = "/usr/bin/tar -C %s -cjf %s %s" % (builddir, tmp, component)
+    util.log("Creating {0} tarball...".format(component))
+    cmd = "/usr/bin/tar -C {0} -cjf {1} {2}".format(builddir, tmp, component)
     try:
       util.shell_cmd(cmd)
     except KeyboardInterrupt:

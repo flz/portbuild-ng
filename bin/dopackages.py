@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser(description='Build some packages.')
 
 # Boolean options
 for name, descr in options.iteritems():
-  parser.add_argument("-%s" % (name), action="store_true", help=descr)
+  parser.add_argument("-{0}".format(name), action="store_true", help=descr)
 
 # Other options
 parser.add_argument("-target", metavar="file", help="Subset of the ports tree to build")

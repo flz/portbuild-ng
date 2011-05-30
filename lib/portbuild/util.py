@@ -14,11 +14,11 @@ def mkdir_p(path):
 
 def warn(msg):
   """Simple warning routine."""
-  print("W: %s" % (msg))
+  print("W: " + msg)
 
 def error(msg):
   """Simple error routine."""
-  print("E: %s" % (msg))
+  print("E: " + msg)
 
 def log(msg):
   """This isn't really useful."""

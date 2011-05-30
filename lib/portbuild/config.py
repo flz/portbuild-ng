@@ -42,7 +42,7 @@ class Config:
 
     for i in check_variables:
       if not self._config.has_option("portbuild", i):
-        error = "Variable %s isn't set in portbuild.conf." % (i)
+        error = "Variable '{0}' isn't set in portbuild.conf.".format(i)
         util.error(error)
         raise InvalidConfig(error)
 

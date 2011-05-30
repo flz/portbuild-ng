@@ -65,18 +65,17 @@ class Torrent:
     if not self.handle:
       raise TorrentNotStarted
     s = self.handle.status()
-    print('%s - %.2f%% complete (down: %.1f kb/s up: %.1f kB/s peers: %d)' %
-        (self.name, s.progress * 100, s.download_rate / 1000, s.upload_rate / 1000,
-        s.num_peers))
+    str = '{0} - {1:.2%} done (dl: {2:.1f} KB/s, ul: {3:.1f} KB/s, peers: {4})'
+    print str.format(self.name, s.progress, \
+                     s.download_rate/1024, s.upload_rate/1024, s.num_peers)
 
   def dump(self):
-    with open("/tmp/%s.torrent" % \
-              (os.path.basename(self.name)), "w") as f:
+    with open("/tmp/{0}.torrent".format(os.path.basename(self.name)), "w") as f:
       f.write(self.data)
 
   @staticmethod
   def create(target):
-    url = "http://%s:6969/announce" % (socket.gethostname())
+    url = "http://{0}:6969/announce".format(socket.gethostname())
     creator = "Ports Management Team <portmgr@FreeBSD.org>"
     fs = libtorrent.file_storage()
     libtorrent.add_files(fs, target)
