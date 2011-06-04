@@ -12,6 +12,10 @@ def mkdir_p(path):
     else:
       raise
 
+def debug(msg):
+  """Simple warning routine."""
+  print("D: " + str(msg))
+
 def warn(msg):
   """Simple warning routine."""
   print("W: " + str(msg))
