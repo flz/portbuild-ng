@@ -14,15 +14,15 @@ def mkdir_p(path):
 
 def warn(msg):
   """Simple warning routine."""
-  print("W: " + msg)
+  print("W: " + str(msg))
 
 def error(msg):
   """Simple error routine."""
-  print("E: " + msg)
+  print("E: " + str(msg))
 
 def log(msg):
   """This isn't really useful."""
-  print(msg)
+  print(str(msg))
 
 def pipe_cmd(cmd, env=None, cwd=None):
   return subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, env=env, cwd=cwd)
