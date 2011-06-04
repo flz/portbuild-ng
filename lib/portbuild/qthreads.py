@@ -13,19 +13,28 @@ class QueueThread(threading.Thread):
     self._stop = threading.Event()
     self.setDaemon(True)
 
-  def dprint(self, msg):
-    print "%s: %s" % (self.name, msg)
+  def setup(self):
+    """Optional setup."""
+    pass
+
+  def teardown(self):
+    """Optional cleanup routine."""
+    pass
 
 class QueueConsumerThread(QueueThread):
   def __init__(self):
     QueueThread.__init__(self)
 
   def run(self):
+    """Start consumer thread."""
     self.setup()
     self.channel.start_consuming()
 
   def stop(self):
+    """Stop consumer thread."""
     self.channel.stop_consuming()
+    self.teardown()
+    self.connection.close()
     self._stop.set()
 
 class QueueProducerThread(QueueThread):
@@ -34,6 +43,7 @@ class QueueProducerThread(QueueThread):
     self.freq = freq
 
   def run(self):
+    """Start producer thread."""
     self.setup()
     # Need to find something better to avoid active loops.
     # Using signal.pause() when produce() is a no-op doesn't work.
@@ -41,8 +51,14 @@ class QueueProducerThread(QueueThread):
       self.produce()
       time.sleep(self.freq)
 
+  def produce(self):
+    """Periodic task. Do nothing by default."""
+    pass
+
   def stop(self):
-      self.connection.close()
-      self._stop.set()
+    """Stop producer thread."""
+    self.teardown()
+    self.connection.close()
+    self._stop.set()
 
 # vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab
