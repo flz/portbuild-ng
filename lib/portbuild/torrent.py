@@ -60,6 +60,9 @@ class Torrent:
     self.data = data
     self.handle = None
 
+  def __copy__(self):
+    return Torrent(self.name, self.data)
+
   def status(self):
     """Print status for the current torrent."""
     if not self.handle:
