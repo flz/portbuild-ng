@@ -1,1 +1,6 @@
 This is a rewrite of the portbuild scripts used on pointyhat.
+
+Dependencies:
+- net/rabbitmq
+- devel/py-pika
+- net-p2p/libtorrent-rasterbar16-python
